@@ -1,7 +1,6 @@
-package com.pokemonreview.api.controller;
+package com.pokemonreview.api.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.pokemonreview.api.controllers.PokemonController;
 import com.pokemonreview.api.dto.PokemonDto;
 import com.pokemonreview.api.dto.PokemonResponse;
 import com.pokemonreview.api.dto.ReviewDto;
@@ -34,7 +33,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 @WebMvcTest(controllers = PokemonController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ExtendWith(MockitoExtension.class)
-public class PokemonControllerTests {
+public class PokemonControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
@@ -43,82 +42,90 @@ public class PokemonControllerTests {
 
     @Autowired
     private ObjectMapper objectMapper;
-    private Pokemon pokemon;
-    private Review review;
-    private ReviewDto reviewDto;
-    private PokemonDto pokemonDto;
+
+    PokemonDto pokemonDto;
 
     @BeforeEach
     public void init() {
-        pokemon = Pokemon.builder().name("pikachu").type("electric").build();
-        pokemonDto = PokemonDto.builder().name("pickachu").type("electric").build();
-        review = Review.builder().title("title").content("content").stars(5).build();
-        reviewDto = ReviewDto.builder().title("review title").content("test content").stars(5).build();
+        pokemonDto = PokemonDto.builder()
+                .name("pickachu")
+                .type("electric")
+                .build();
     }
 
     @Test
     public void PokemonController_CreatePokemon_ReturnCreated() throws Exception {
-        given(pokemonService.createPokemon(ArgumentMatchers.any())).willAnswer((invocation -> invocation.getArgument(0)));
+        given(pokemonService.createPokemon(ArgumentMatchers.any())).willAnswer(invocation -> invocation.getArgument(0));
 
         ResultActions response = mockMvc.perform(post("/api/pokemon/create")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(pokemonDto)));
 
         response.andExpect(MockMvcResultMatchers.status().isCreated())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.name", CoreMatchers.is(pokemonDto.getName())))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.type", CoreMatchers.is(pokemonDto.getType())));
+                .andExpect(MockMvcResultMatchers.jsonPath(("$.name"), CoreMatchers.is(pokemonDto.getName())))
+                .andExpect(MockMvcResultMatchers.jsonPath(("$.type"), CoreMatchers.is(pokemonDto.getType())))
+                .andDo(MockMvcResultHandlers.print());
     }
 
     @Test
     public void PokemonController_GetAllPokemon_ReturnResponseDto() throws Exception {
-        PokemonResponse responseDto = PokemonResponse.builder().pageSize(10).last(true).pageNo(1).content(Arrays.asList(pokemonDto)).build();
-        when(pokemonService.getAllPokemon(1,10)).thenReturn(responseDto);
+        PokemonResponse responseDto = PokemonResponse.builder()
+                .pageSize(10)
+                .last(true)
+                .pageNo(1)
+                .content(Arrays.asList(pokemonDto))
+                .build();
+
+        when(pokemonService.getAllPokemon(1, 10)).thenReturn(responseDto);
+
 
         ResultActions response = mockMvc.perform(get("/api/pokemon")
                 .contentType(MediaType.APPLICATION_JSON)
-                .param("pageNo","1")
+                .param("pageNo", "1")
                 .param("pageSize", "10"));
 
         response.andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.content.size()", CoreMatchers.is(responseDto.getContent().size())));
+                .andExpect(MockMvcResultMatchers.jsonPath(("$.content.size()"), CoreMatchers.is(responseDto.getContent().size())));
     }
 
     @Test
-    public void PokemonController_PokemonDetail_ReturnPokemonDto() throws Exception {
-        int pokemonId = 1;
-        when(pokemonService.getPokemonById(pokemonId)).thenReturn(pokemonDto);
+    public void PokemonController_GetPokemonDetail_ReturnResponseDto() throws Exception {
+        when(pokemonService.getPokemonById(pokemonDto.getId())).thenReturn(pokemonDto);
 
-        ResultActions response = mockMvc.perform(get("/api/pokemon/1")
+
+        ResultActions response = mockMvc.perform(get("/api/pokemon/" + pokemonDto.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(pokemonDto)));
 
         response.andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.name", CoreMatchers.is(pokemonDto.getName())))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.type", CoreMatchers.is(pokemonDto.getType())));
+                .andExpect(MockMvcResultMatchers.jsonPath(("$.name"), CoreMatchers.is(pokemonDto.getName())))
+                .andExpect(MockMvcResultMatchers.jsonPath(("$.type"), CoreMatchers.is(pokemonDto.getType())))
+                .andDo(MockMvcResultHandlers.print());
     }
 
     @Test
     public void PokemonController_UpdatePokemon_ReturnPokemonDto() throws Exception {
-        int pokemonId = 1;
-        when(pokemonService.updatePokemon(pokemonDto, pokemonId)).thenReturn(pokemonDto);
+        when(pokemonService.updatePokemon(pokemonDto, pokemonDto.getId())).thenReturn(pokemonDto);
 
-        ResultActions response = mockMvc.perform(put("/api/pokemon/1/update")
+
+        ResultActions response = mockMvc.perform(put("/api/pokemon/" + pokemonDto.getId() + "/update")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(pokemonDto)));
 
         response.andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.name", CoreMatchers.is(pokemonDto.getName())))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.type", CoreMatchers.is(pokemonDto.getType())));
+                .andExpect(MockMvcResultMatchers.jsonPath(("$.name"), CoreMatchers.is(pokemonDto.getName())))
+                .andExpect(MockMvcResultMatchers.jsonPath(("$.type"), CoreMatchers.is(pokemonDto.getType())))
+                .andDo(MockMvcResultHandlers.print());
     }
 
     @Test
     public void PokemonController_DeletePokemon_ReturnString() throws Exception {
-        int pokemonId = 1;
-        doNothing().when(pokemonService).deletePokemonId(1);
+        doNothing().when(pokemonService).deletePokemonId(pokemonDto.getId());
 
-        ResultActions response = mockMvc.perform(delete("/api/pokemon/1/delete")
+        ResultActions response = mockMvc.perform(delete("/api/pokemon/" + pokemonDto.getId() + "/delete")
                 .contentType(MediaType.APPLICATION_JSON));
 
-        response.andExpect(MockMvcResultMatchers.status().isOk());
+        response.andExpect(MockMvcResultMatchers.status().isOk())
+                .andDo(MockMvcResultHandlers.print());
     }
 }
